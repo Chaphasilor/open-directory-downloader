@@ -1,0 +1,35 @@
+{
+  "name": "open-directory-downloader",
+  "version": "1.0.0",
+  "description": "A NodeJS wrapper around KoalaBear84/OpenDirectoryDownloader",
+  "main": "open-directory-downloader.js",
+  "scripts": {
+    "install": "node ./install.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Chaphasilor/open-directory-downloader.git"
+  },
+  "keywords": [
+    "http",
+    "https",
+    "parser",
+    "open",
+    "directory",
+    "indexer",
+    "OpenDirectoryDownloader",
+    "downloader",
+    "opendirectory",
+    "open-directory-downloader"
+  ],
+  "author": "Chaphasilor",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/Chaphasilor/open-directory-downloader/issues"
+  },
+  "homepage": "https://github.com/Chaphasilor/open-directory-downloader#readme",
+  "dependencies": {
+    "adm-zip": "^0.5.1",
+    "node-fetch": "^2.6.1"
+  }
+}
