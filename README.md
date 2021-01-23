@@ -1,5 +1,7 @@
 # A NodeJS Wrapper around Open Directory Downloader
 
+![npm](https://img.shields.io/npm/v/open-directory-downloader?style=for-the-badge)
+
 This is a wrapper around KoalaBear84/OpenDirectoryDownloader, exposing functionality and output of the CLI in JavaScript.
 
 Open Directory Downloader is a CLI tool for indexing so-called *Open Directories*, which are HTTP servers exposing files and folders for browsing and downloading. For more info visit [the subreddit](https://reddit.com/r/opendirectories)
