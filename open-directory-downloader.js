@@ -91,7 +91,7 @@ module.exports = class OpenDirectoryDownloader {
         resolve({
           scannedUrl: url,
           scan: results,
-          scanFile: `${this.outputDir}/${jsonFile}`,
+          scanFile: keepJson ? `${this.outputDir}/${jsonFile}` :  undefined,
           reddit: redditOutput,
           credits,
         })

@@ -7,6 +7,7 @@ const CONFIG = require(`./config`)
 const platform = process.platform
 const architecture = process.arch
 
+console.log(`Fetching release assets from GitHub...`)
 fetch(`${CONFIG.GitHubReleasesUrl}/${CONFIG.OpenDirectoryDownloaderVersion.releaseId}/assets`).then(res => res.json()).then(assets => {
 
   let releaseName
@@ -43,7 +44,7 @@ fetch(`${CONFIG.GitHubReleasesUrl}/${CONFIG.OpenDirectoryDownloaderVersion.relea
   
   let downloadUrl = asset.browser_download_url
 
-  console.log(`Creating ODD directory...`)
+  // console.log(`Creating ODD directory...`)
   fs.mkdirSync(CONFIG.OpenDirectoryDownloaderFolder)
   
   console.log(`Starting download of OpenDirectoryDownloader executable...`)
@@ -57,13 +58,19 @@ fetch(`${CONFIG.GitHubReleasesUrl}/${CONFIG.OpenDirectoryDownloaderVersion.relea
     const dest = fs.createWriteStream(`${CONFIG.OpenDirectoryDownloaderFolder}/ODD.zip`)
     res.body.pipe(dest)
 
-    res.body.on(`end`, () => {
+    dest.on(`finish`, () => {
 
       let zip = new AdmZip(`${CONFIG.OpenDirectoryDownloaderFolder}/ODD.zip`)
       zip.extractAllTo(CONFIG.OpenDirectoryDownloaderFolder, true)
 
-      console.log(`Deleting zip after extraction...`)
+      // console.log(`Deleting zip after extraction...`)
       fs.unlinkSync(`${CONFIG.OpenDirectoryDownloaderFolder}/ODD.zip`)
+
+      if (platform === `linux`) {
+        // make executable
+        console.log(`Making binary executable...`)
+        fs.chmodSync(`${CONFIG.OpenDirectoryDownloaderFolder}/OpenDirectoryDownloader`, fs.constants.S_IXOTH)
+      }
       
       console.log(`OpenDirectoryDownloader has been installed successfully to ${CONFIG.OpenDirectoryDownloaderFolder}!`)
       
