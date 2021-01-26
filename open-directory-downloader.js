@@ -5,20 +5,50 @@ const CONFIG = require(`./config`)
 
 module.exports = class OpenDirectoryDownloader {
 
-  constructor(executablePath, outputDirectory) {
+  constructor(executablePath = CONFIG.OpenDirectoryDownloaderPath, outputDirectory = CONFIG.OpenDirectoryDownloaderOutputFolder) {
 
-    this.executable = executablePath || CONFIG.OpenDirectoryDownloaderPath;
-    this.outputDir = outputDirectory || CONFIG.OpenDirectoryDownloaderOutputFolder;
+    this.executable = executablePath;
+    this.outputDir = outputDirectory;
     
   }
 
-  scanUrl(url, keepJson = false) {
+  /**
+   * Initiates the scan of the provided URL
+   * @param {URL|String} url The URL to scan. Has to be a supported Open Directory
+   * @param {Object} [options] Additional options for the scan
+   * @param {String} [options.outputFile] The name of the output file(s). Defaults to the (safely formatted) URL.
+   * @param {Boolean} [options.keepJsonFile=false] Keep the JSON file created by the OpenDirectoryDownloader binary after the scan is done?
+   * @param {Boolean} [options.keepUrlFile=false] Keep the text file created by the OpenDirectoryDownloader binary after the scan is done?
+   * @param {Boolean} [options.performSpeedtest=false] Perform a speed test after the scan is done? (usually takes a few seconds)
+   * @param {Boolean} [options.uploadUrlFile=false] Automatically upload the file containing all the found URLs to GoFile?
+   */
+  scanUrl(url, options = {}) {
     return new Promise((resolve, reject) => {
+
+      options.keepJsonFile = options.keepJsonFile || false
+      options.keepUrlFile = options.keepUrlFile || false
+      options.performSpeedtest = options.performSpeedtest || false
+      options.uploadUrlFile = options.uploadUrlFile || false
     
-      const oddProcess = spawn(this.executable, [`-u ${url}`, `--quit`, `--json`, `--upload-urls`, `--speedtest`]);
+      // both String and URL implement the toString() method, so just use that instead of detecting the type
+      let processArgs = [`-u ${url}`, `--quit`, `--json`, ]
+      if (options.performSpeedtest) {
+        processArgs.push(`--upload-urls`)
+      }
+      if (options.performSpeedtest) {
+        processArgs.push(`--speedtest`)
+      }
+      if (options.outputFile && options.outputFile.length > 0) {
+        processArgs.push(`--output-file`)
+        processArgs.push(options.outputFile)
+      }
+      const oddProcess = spawn(this.executable, processArgs);
 
       let output = ``;
       let error = ``;
+
+      oddProcess.stdout.setEncoding(`utf8`)
+      oddProcess.stderr.setEncoding(`utf8`)
       
       oddProcess.stdout.on('data', (data) => {
         // console.log(`stdout: ${data}`);
@@ -26,12 +56,12 @@ module.exports = class OpenDirectoryDownloader {
       });
       
       oddProcess.stderr.on('data', (data) => {
-        console.warn(`Error from ODD: ${data}`);
+        // console.warn(`Error from ODD: ${data}`);
         error += data;
       });
 
       oddProcess.on(`error`, (err) => {
-        return reject(err);
+        return reject([err]);
       })
       
       oddProcess.on('close', (code) => {
@@ -40,14 +70,14 @@ module.exports = class OpenDirectoryDownloader {
           reject(new Error(`ODD exited with code ${code}: ${error}`));
         }
 
-        if (output.split(`Finshed indexing`).length <= 1) {
+        if (output.split(`Finished indexing`).length <= 1) {
           return reject(new Error(`ODD never finished indexing!`));
         }
         
-        // const finalResults = output.split(`Finshed indexing`)[1];
-        const finalResults = output.split(`Saving URL list to file...`)[1];
+        // const finalResults = output.split(`Finished indexing`)[1];
+        const finalResults = output.split(`Saving URL list to file..`)[1];
 
-        console.log(`finalResults:`, finalResults);
+        // console.log(`finalResults:`, finalResults);
         
         const redditOutputStartString = `|`;
         const redditOutputEndString = `^(Created by [KoalaBear84's OpenDirectory Indexer](https://github.com/KoalaBear84/OpenDirectoryDownloader/))`;
@@ -57,41 +87,60 @@ module.exports = class OpenDirectoryDownloader {
 
         let sessionRegexResults = finalResults.match(/Saved\ session:\ (.*)/);
         if (!sessionRegexResults || sessionRegexResults.length <= 1) {
-          return reject(new Error(`JSON session file not found!`));
+          return reject([new Error(`JSON session file not found!`)]);
         }
         let jsonFile = sessionRegexResults[1]; // get first capturing group. /g modifier has to be missing!
 
         let urlListRegexResults = finalResults.match(/Saved URL list to file:\ (.*)/);
         if (!urlListRegexResults || urlListRegexResults.length <= 1) {
-          return reject(new Error(`URL list file not found!`));
+          return reject([new Error(`URL list file not found!`)]);
         }
         let urlFile = urlListRegexResults[1];
-        fs.unlinkSync(`${this.outputDir}/${urlFile}`);
+        if (!options.keepUrlFile) {
+          try {
+            fs.unlinkSync(urlFile);
+          } catch (err) {
+            // console.error(`Failed to delete URL list file:`, err)
+            // fail silently in production, because this isn't a critical error
+            // could be changed once https://github.com/KoalaBear84/OpenDirectoryDownloader/issues/64 is fixed
+          }
+        }
 
         let results;
         try {
 
-          results = JSON.parse(fs.readFileSync(`${this.outputDir}/${jsonFile}`));
-          if (!keepJson) {
-            fs.unlinkSync(`${this.outputDir}/${jsonFile}`);
+          results = JSON.parse(fs.readFileSync(jsonFile));
+          if (!options.keepJsonFile) {
+            try {
+              fs.unlinkSync(jsonFile);
+            } catch (err) {
+              // console.error(`Failed to delete JSON file:`, err)
+              // fail silently in production, because this isn't a critical error
+              // could be changed once https://github.com/KoalaBear84/OpenDirectoryDownloader/issues/64 is fixed
+            }
           }
           
         } catch (err) {
-          console.error(`err:`, err);
-
-          resolve({
-            scannedUrl: url,
-            scanFile: `${this.outputDir}/${jsonFile}`,
-            reddit: redditOutput,
-            credits,
-          })
           
+          // console.error(`Error while reading in the scan results:`, err);
+          reject([
+            new Error(`Error while reading in the scan results`),
+            {
+              scannedUrl: url.toString(),
+              jsonFile: options.keepJsonFile ? jsonFile :  undefined,
+              urlFile: options.keepUrlFile ? urlFile :  undefined,
+              reddit: redditOutput,
+              credits,
+            },
+          ])
+            
         }
 
         resolve({
-          scannedUrl: url,
+          scannedUrl: url.toString(),
           scan: results,
-          scanFile: keepJson ? `${this.outputDir}/${jsonFile}` :  undefined,
+          jsonFile: options.keepJsonFile ? jsonFile :  undefined,
+          urlFile: options.keepUrlFile ? urlFile :  undefined,
           reddit: redditOutput,
           credits,
         })
