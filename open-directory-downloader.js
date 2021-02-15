@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const { exec } = require('child_process');
 const fs = require(`fs`);
 
 const CONFIG = require(`./config`)
@@ -9,6 +9,10 @@ module.exports = class OpenDirectoryDownloader {
 
     this.executable = executablePath;
     this.outputDir = outputDirectory;
+
+    if (!fs.existsSync(this.outputDir)) {
+      fs.mkdirSync(this.outputDir)
+    }
     
   }
 
@@ -42,7 +46,11 @@ module.exports = class OpenDirectoryDownloader {
         processArgs.push(`--output-file`)
         processArgs.push(options.outputFile)
       }
-      const oddProcess = spawn(this.executable, processArgs);
+
+      const oddProcess = exec(`${this.executable} ${processArgs.join(` `)}`, {
+        shell: true,
+        cwd: this.outputDir,
+      });
 
       let output = ``;
       let error = ``;
@@ -70,8 +78,15 @@ module.exports = class OpenDirectoryDownloader {
           reject(new Error(`ODD exited with code ${code}: ${error}`));
         }
 
+        console.log(`output:`, output)
+        
         if (output.split(`Finished indexing`).length <= 1) {
           return reject(new Error(`ODD never finished indexing!`));
+        }
+
+        if (output.split(`No URLs to save`).length > 1) {
+          // ODD found no files or subdirectories
+          return reject(new Error(`OpenDirectoryDownloader didn't find any files or directories on that site!`));
         }
         
         // const finalResults = output.split(`Finished indexing`)[1];

@@ -1,3 +1,4 @@
+//TODO remove old files (not the whole ODD directory and not the Scans folder) before downloading the new version
 const fs = require(`fs`)
 
 const fetch = require(`node-fetch`)
@@ -7,7 +8,7 @@ const CONFIG = require(`./config`)
 const platform = process.platform
 const architecture = process.arch
 
-console.log(`Fetching release assets from GitHub...`)
+console.info(`Fetching release assets from GitHub...`)
 fetch(`${CONFIG.GitHubReleasesUrl}/${CONFIG.OpenDirectoryDownloaderVersion.releaseId}/assets`).then(res => res.json()).then(assets => {
 
   let releaseName
@@ -45,9 +46,39 @@ fetch(`${CONFIG.GitHubReleasesUrl}/${CONFIG.OpenDirectoryDownloaderVersion.relea
   let downloadUrl = asset.browser_download_url
 
   // console.log(`Creating ODD directory...`)
-  fs.mkdirSync(CONFIG.OpenDirectoryDownloaderFolder)
+
+  if (fs.existsSync(CONFIG.OpenDirectoryDownloaderFolder) && fs.lstatSync(CONFIG.OpenDirectoryDownloaderFolder).isDirectory()) {
+
+    console.info(`Removing old version of OpenDirectoryDownloader`)
   
-  console.log(`Starting download of OpenDirectoryDownloader executable...`)
+    const allDirents = fs.readdirSync(CONFIG.OpenDirectoryDownloaderFolder, {
+      withFileTypes: true,
+    })
+    const direntsToRemove = allDirents.filter(dirent => {
+      if (dirent.isDirectory()) {
+        return ![CONFIG.OpenDirectoryDownloaderOutputFolderName].includes(dirent.name)
+      } else {
+        return ![].includes(dirent.name)
+      }
+    })
+  
+    for (const dirent of direntsToRemove) {
+  
+      fs.rmSync(`${CONFIG.OpenDirectoryDownloaderFolder}/${dirent.name}`, {
+        recursive: true,
+      })
+      
+    }
+    
+  } else {
+    fs.mkdirSync(CONFIG.OpenDirectoryDownloaderFolder)
+  }
+
+  if (!fs.existsSync(CONFIG.OpenDirectoryDownloaderOutputFolder)) {
+    fs.mkdirSync(CONFIG.OpenDirectoryDownloaderOutputFolder)
+  }
+  
+  console.info(`Starting download of OpenDirectoryDownloader executable...`)
   fetch(downloadUrl)
   .then(res => {
 
@@ -69,10 +100,10 @@ fetch(`${CONFIG.GitHubReleasesUrl}/${CONFIG.OpenDirectoryDownloaderVersion.relea
       if (platform === `linux`) {
         // make executable
         console.log(`Making binary executable...`)
-        fs.chmodSync(`${CONFIG.OpenDirectoryDownloaderFolder}/OpenDirectoryDownloader`, fs.constants.S_IXOTH)
+        fs.chmodSync(`${CONFIG.OpenDirectoryDownloaderFolder}/OpenDirectoryDownloader`, 0o755)
       }
       
-      console.log(`OpenDirectoryDownloader has been installed successfully to ${CONFIG.OpenDirectoryDownloaderFolder}!`)
+      console.info(`OpenDirectoryDownloader has been installed successfully to ${CONFIG.OpenDirectoryDownloaderFolder}!`)
       
     })
     
