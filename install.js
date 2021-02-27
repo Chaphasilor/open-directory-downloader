@@ -1,4 +1,3 @@
-//TODO remove old files (not the whole ODD directory and not the Scans folder) before downloading the new version
 const fs = require(`fs`)
 
 const fetch = require(`node-fetch`)

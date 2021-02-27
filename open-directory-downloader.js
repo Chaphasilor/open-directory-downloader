@@ -78,7 +78,7 @@ module.exports = class OpenDirectoryDownloader {
           reject(new Error(`ODD exited with code ${code}: ${error}`));
         }
 
-        console.log(`output:`, output)
+        // console.log(`output:`, output)
         
         if (output.split(`Finished indexing`).length <= 1) {
           return reject(new Error(`ODD never finished indexing!`));
