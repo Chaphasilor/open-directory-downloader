@@ -2,8 +2,12 @@ const { exec } = require('child_process');
 const fs = require(`fs`);
 
 const CONFIG = require(`./config`)
+const { ODDError, ODDWrapperError } = require(`./errors`)
 
-module.exports = class OpenDirectoryDownloader {
+module.exports.ODDError = ODDError
+module.exports.ODDWrapperError = ODDWrapperError
+
+module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
   constructor(executablePath = CONFIG.OpenDirectoryDownloaderPath, outputDirectory = CONFIG.OpenDirectoryDownloaderOutputFolder) {
 
@@ -75,18 +79,18 @@ module.exports = class OpenDirectoryDownloader {
       oddProcess.on('close', (code) => {
 
         if (code !== 1) {
-          reject(new Error(`ODD exited with code ${code}: ${error}`));
+          reject(new ODDError(`ODD exited with code ${code}`, error));
         }
 
         // console.log(`output:`, output)
         
         if (output.split(`Finished indexing`).length <= 1) {
-          return reject(new Error(`ODD never finished indexing!`));
+          return reject(new ODDError(`ODD never finished indexing!`));
         }
 
         if (output.split(`No URLs to save`).length > 1) {
           // ODD found no files or subdirectories
-          return reject(new Error(`OpenDirectoryDownloader didn't find any files or directories on that site!`));
+          return reject(new ODDError(`OpenDirectoryDownloader didn't find any files or directories on that site!`));
         }
         
         // const finalResults = output.split(`Finished indexing`)[1];
@@ -102,13 +106,13 @@ module.exports = class OpenDirectoryDownloader {
 
         let sessionRegexResults = finalResults.match(/Saved\ session:\ (.*)/);
         if (!sessionRegexResults || sessionRegexResults.length <= 1) {
-          return reject([new Error(`JSON session file not found!`)]);
+          return reject([new ODDWrapperError(`JSON session file not found!`)]);
         }
         let jsonFile = sessionRegexResults[1]; // get first capturing group. /g modifier has to be missing!
 
         let urlListRegexResults = finalResults.match(/Saved URL list to file:\ (.*)/);
         if (!urlListRegexResults || urlListRegexResults.length <= 1) {
-          return reject([new Error(`URL list file not found!`)]);
+          return reject([new ODDWrapperError(`URL list file not found!`)]);
         }
         let urlFile = urlListRegexResults[1];
         if (!options.keepUrlFile) {
@@ -139,7 +143,7 @@ module.exports = class OpenDirectoryDownloader {
           
           // console.error(`Error while reading in the scan results:`, err);
           reject([
-            new Error(`Error while reading in the scan results`),
+            new ODDWrapperError(`Error while reading in the scan results`),
             {
               scannedUrl: url.toString(),
               jsonFile: options.keepJsonFile ? jsonFile :  undefined,
