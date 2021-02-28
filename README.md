@@ -90,7 +90,7 @@ indexer.scanUrl(url)
 - Returns: Promise<Resolves to `ScanResult` | Rejects to `Array<Error[,ScanResult]>`>  
   If the promise rejects, it will return an array where the first element is always an `Error` object and there might also be a second element, which is a `ScanResult` but without the `ScanResult.scan` property.
 
-##### ScanResult
+#### ScanResult
 
 *The object returned when the promise resolves*
 
@@ -111,17 +111,13 @@ indexer.scanUrl(url)
 
 #### ODDError
 
-*
-An error indicating that the OpenDirectoryDownloader binary encountered an error.  
-Often indicates that the URL couldn't be scanned, because it isn't supported.
-*
+*An error indicating that the OpenDirectoryDownloader binary encountered an error.  
+Often indicates that the URL couldn't be scanned, because it isn't supported.*
 
 #### ODDWrapperError
 
-*
-An error indicating that the wrapper itself encountered an error.  
-This could be related to e.g. file system issues (deleted files, permission issues, etc.).
-*
+*An error indicating that the wrapper itself encountered an error.  
+This could be related to e.g. file system issues (deleted files, permission issues, etc.).*
 
 ## Examples
 
