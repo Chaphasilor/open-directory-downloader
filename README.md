@@ -10,7 +10,7 @@ Open Directory Downloader is a CLI tool for indexing so-called *Open Directories
 
 | Wrapper Version | Supported OpenDirectoryDownloader Versions | Included Version |
 | --- | --- | --- |
-| 3.0.0 | >1.9.3.5 | 1.9.3.8 |
+| 3.0.0 | >1.9.3.5 | 1.9.3.9 |
 | 2.0.0 | >1.9.3.5 | 1.9.3.8 |
 | 1.1.0 | >1.9.3.5 | 1.9.3.6 |
 | 1.0.0 | >1.9.3.1 | 1.9.3.3 |
