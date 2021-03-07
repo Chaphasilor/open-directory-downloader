@@ -39,7 +39,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
       options.uploadUrlFile = options.uploadUrlFile || false
     
       // both String and URL implement the toString() method, so just use that instead of detecting the type
-      let processArgs = [`-u ${url}`, `--quit`, `--json`, ]
+      let processArgs = [`-u "${url}"`, `--quit`, `--json`, ]
       if (options.performSpeedtest) {
         processArgs.push(`--upload-urls`)
       }
@@ -63,7 +63,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
       oddProcess.stderr.setEncoding(`utf8`)
       
       oddProcess.stdout.on('data', (data) => {
-        // console.log(`stdout: ${data}`);
+        // console.debug(`stdout: ${data}`);
         output += data;
       });
       
@@ -73,6 +73,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
       });
 
       oddProcess.on(`error`, (err) => {
+        // console.error(`error:`, err)
         return reject([err]);
       })
       
