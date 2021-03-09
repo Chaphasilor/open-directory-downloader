@@ -2,8 +2,8 @@ module.exports = {}
 
 module.exports.GitHubReleasesUrl = `https://api.github.com/repos/KoalaBear84/OpenDirectoryDownloader/releases`
 module.exports.OpenDirectoryDownloaderVersion = {
-  version: `v1.9.3.9`,
-  releaseId: `39096828`
+  version: `v1.9.4.4`,
+  releaseId: `39428071`
 }
 module.exports.OpenDirectoryDownloaderFolder = `${__dirname}/ODD`
 module.exports.OpenDirectoryDownloaderOutputFolderName = `Scans`
