@@ -1,22 +1,10 @@
-# A NodeJS Wrapper around Open Directory Downloader
+# A NodeJS Wrapper around OpenDirectoryDownloader
 
 ![npm](https://img.shields.io/npm/v/open-directory-downloader?style=for-the-badge)
 
 This is a wrapper around [KoalaBear84/OpenDirectoryDownloader](https://github.com/KoalaBear84/OpenDirectoryDownloader), exposing functionality and output of the CLI in JavaScript.
 
 Open Directory Downloader is a CLI tool for indexing so-called *Open Directories*, which are HTTP servers exposing files and folders for browsing and downloading. For more info visit [the subreddit](https://reddit.com/r/opendirectories)
-
-## Compatible Versions of OpenDirectoryDownloader
-
-| Wrapper Version | Supported OpenDirectoryDownloader Versions (up to) | Included Version |
-| --- | --- | --- |
-| 3.1.0 | 1.9.4.4 | 1.9.4.4 |
-| 3.0.0 | 1.9.4.3 | 1.9.3.9 |
-| 2.0.0 | 1.9.4.3 | 1.9.3.8 |
-| 1.1.0 | 1.9.4.3 | 1.9.3.6 |
-| 1.0.0 | 1.9.3.1-1.9.3.5 | 1.9.3.3 |
-
-Some intermediary releases might not be fully supported. It is recommended to use the versions that are included by default.
 
 ## Installation
 
@@ -28,6 +16,19 @@ Upon installation, the latest supported OpenDirectoryDownloader binary will auto
 If this should fail, a local installation can be used instead (see below).
 
 For changelogs, please look at the [GitHub release page](https://github.com/Chaphasilor/open-directory-downloader/releases).
+
+## Compatible Versions of OpenDirectoryDownloader
+
+| Wrapper Version | Supported ODD Versions (up to) | Included Version |
+| --- | --- | --- |
+| 3.1.1 | 1.9.4.5 | 1.9.4.5 |
+| 3.1.0 | 1.9.4.5 | 1.9.4.4 |
+| 3.0.0 | 1.9.4.3 | 1.9.3.9 |
+| 2.0.0 | 1.9.4.3 | 1.9.3.8 |
+| 1.1.0 | 1.9.4.3 | 1.9.3.6 |
+| 1.0.0 | 1.9.3.1-1.9.3.5 | 1.9.3.3 |
+
+Some intermediary releases might not be fully supported. It is recommended to use the versions that are included by default.
 
 ## Usage
 

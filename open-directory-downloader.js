@@ -31,7 +31,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
    * @param {Boolean} [options.uploadUrlFile=false] Automatically upload the file containing all the found URLs to GoFile?
    * @param {Boolean} [options.fastScan=false] Only perform actions that are fast, so no HEAD requests, etc. Might result in missing file sizes
    * @param {Boolean} [options.exactSizes=false] Use HEAD requests to retrieve exact file sizes
-   * @param {String} [options.userAgent=???] Use a custom user agent for all HTTP requests
+   * @param {String} [options.userAgent=""] Use a custom user agent for all HTTP requests
    * @param {Object} [options.auth] Used to configure (HTTP Basic) auth settings
    * @param {String} [options.auth.username=""] The user name to use for authentication
    * @param {String} [options.auth.password=""] The password to use for authentication
