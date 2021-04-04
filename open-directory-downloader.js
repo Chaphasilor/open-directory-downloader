@@ -1,4 +1,4 @@
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require(`fs`);
 
 const CONFIG = require(`./config`)
@@ -96,7 +96,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         processArgs.push(`"${options.auth.password}"`)
       }
 
-      const oddProcess = exec(`${this.executable} ${processArgs.join(` `)}`, {
+      const oddProcess = spawn(this.executable, processArgs, {
         shell: true,
         cwd: this.outputDir,
       });
@@ -122,21 +122,24 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         return reject([new ODDWrapperError(err.message)]);
       })
       
-      oddProcess.on('close', (code) => {
+      oddProcess.on('close', (code, signal) => {
 
+        if (!code) {
+          return reject([new ODDError(`ODD was killed by '${signal}'`)]);
+        }
         if (code !== 1) {
-          reject(new ODDError(`ODD exited with code ${code}`, error));
+          return reject([new ODDError(`ODD exited with code '${code}'`)]);
         }
 
         // console.log(`output:`, output)
         
         if (output.split(`Finished indexing`).length <= 1) {
-          return reject(new ODDError(`ODD never finished indexing!`));
+          return reject([new ODDError(`ODD never finished indexing!`)]);
         }
 
         if (output.split(`No URLs to save`).length > 1) {
           // ODD found no files or subdirectories
-          return reject(new ODDError(`OpenDirectoryDownloader didn't find any files or directories on that site!`));
+          return reject([new ODDError(`OpenDirectoryDownloader didn't find any files or directories on that site!`)]);
         }
         
         // const finalResults = output.split(`Finished indexing`)[1];
