@@ -149,7 +149,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           
         }
         
-        console.debug(`stdout: ${data}`);
+        // console.debug(`stdout: ${data}`);
         output += data;
 
       });
