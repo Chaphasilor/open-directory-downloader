@@ -13,6 +13,21 @@ class ODDError extends Error {
   }
 }
 
+class ODDOutOfMemoryError extends Error {
+  constructor(message, ...extras) {
+
+    super()
+
+    Error.captureStackTrace(this, this.constructor)
+    this.name = 'ODDOutOfMemoryError'
+    this.message = message
+    if (extras) {
+      this.extras = extras
+    }
+
+  }
+}
+
 class ODDWrapperError extends Error {
   constructor(message, ...extras) {
 
@@ -30,5 +45,6 @@ class ODDWrapperError extends Error {
 
 module.exports = {
   ODDError,
+  ODDOutOfMemoryError,
   ODDWrapperError,
 }

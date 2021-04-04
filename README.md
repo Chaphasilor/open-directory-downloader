@@ -56,6 +56,7 @@ indexer.scanUrl(url)
 
 | Wrapper Version | Supported ODD Versions (up to) | Included Version |
 | --- | --- | --- |
+| 4.0.0 | 1.9.4.6 | 1.9.4.6 |
 | 3.1.2 | 1.9.4.6 | 1.9.4.6 |
 | 3.1.1 | 1.9.4.6 | 1.9.4.5 |
 | 3.1.0 | 1.9.4.6 | 1.9.4.4 |
@@ -70,14 +71,17 @@ Some intermediary releases might not be fully supported. It is recommended to us
 
 ### Class OpenDirectoryDownloader
 
-#### OpenDirectoryDownloader([executablePath, outputDirectory])
+#### OpenDirectoryDownloader(options)
 
 *Constructor*
 
-- `executablePath` (`String`) (optional): The full path to the OpenDirectoryDownloader executable.  
-  Allows you to use your own installation of OpenDirectoryDownloader.
-- `outputDirectory` (`String`) (optional): The full path to the directory where OpenDirectoryDownloader saves its scan files.  
-  Required if `executablePath` is set.
+- `options` (`Object`) (optional): Additional options for the scan
+  - `outputFile` (`String`) (optional, defaults to the escaped URL): The name of the output file(s). Can also be a full path. Don't include an extension, as multiple files with different extensions will be generated.
+  - `executablePath` (`String`) (optional) The full path to the OpenDirectoryDownloader executable.  
+    Allows you to use a custom OpenDirectoryDownloader binary.
+  - `workingDirectory` (`String`) (optional) The full path to the directory where OpenDirectoryDownloader saves its scan files.
+  - `maximumMemory` (`Number`) (optional, default is `Infinity`) The maximum allowed memory usage in bytes for each scan.  
+    If the limit is exceeded, the scan is aborted and rejects with an `ODDOutOfMemoryError`.
 - Returns: An instance of `OpenDirectoryDownloader`
 
 #### OpenDirectoryDownloader.scanUrl(url[, options])  
@@ -126,6 +130,10 @@ Some intermediary releases might not be fully supported. It is recommended to us
 
 *An error indicating that the OpenDirectoryDownloader binary encountered an error.  
 Often indicates that the URL couldn't be scanned, because it isn't supported.*
+
+#### ODDOutOfMemoryError
+
+*An error indicating that the OpenDirectoryDownloader process used more memory than allowed by `options.maximumMemory`.*
 
 #### ODDWrapperError
 
