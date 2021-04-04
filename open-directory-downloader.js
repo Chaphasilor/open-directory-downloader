@@ -134,7 +134,8 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
             
             this.memoryUsage = memoryUsage
             if (this.memoryUsage > this.maxMemory) {
-              oddProcess.kill()
+              process.kill(oddProcess.oddPid, `SIGKILL`) // force-kill ODD process
+              oddProcess.kill() // kill the wrapping child process
               return reject([new ODDOutOfMemoryError(`ODD process killed because it exceeded the memory limit!`, {
                 usage: this.memoryUsage,
                 limit: this.maxMemory,
