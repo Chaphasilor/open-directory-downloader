@@ -1,18 +1,31 @@
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require(`fs`);
+const { EventEmitter } = require(`events`)
+
+const pidusage = require('pidusage');
 
 const CONFIG = require(`./config`)
-const { ODDError, ODDWrapperError } = require(`./errors`)
+const { ODDError, ODDWrapperError, ODDOutOfMemoryError } = require(`./errors`)
 
 module.exports.ODDError = ODDError
 module.exports.ODDWrapperError = ODDWrapperError
+module.exports.ODDOutOfMemoryError = ODDOutOfMemoryError
 
 module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
-  constructor(executablePath = CONFIG.OpenDirectoryDownloaderPath, outputDirectory = CONFIG.OpenDirectoryDownloaderOutputFolder) {
+  /**
+   * Creates a new instance  
+   * Doesn't start ODD yet
+   * @param {Object} [options] options that apply to all scans
+   * @param {String} [options.executablePath] the full path to the custom ODD binary to use (instead of the bundled one)
+   * @param {String} [options.workingDirectory] the full path to the custom current working directory (location of output files)
+   * @param {Number} [options.maximumMemory=Infinity] the maximum allowed memory usage in bytes for the ODD process
+   */
+  constructor(options = {}) {
 
-    this.executable = executablePath;
-    this.outputDir = outputDirectory;
+    this.executable = options.executablePath || CONFIG.OpenDirectoryDownloaderPath;
+    this.outputDir = options.workingDirectory || CONFIG.OpenDirectoryDownloaderOutputFolder;
+    this.maxMemory = options.maximumMemory || Infinity
 
     if (!fs.existsSync(this.outputDir)) {
       fs.mkdirSync(this.outputDir)
@@ -96,9 +109,10 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         processArgs.push(`"${options.auth.password}"`)
       }
 
-      const oddProcess = exec(`${this.executable} ${processArgs.join(` `)}`, {
+      const oddProcess = spawn(this.executable, processArgs, {
         shell: true,
         cwd: this.outputDir,
+        detached: false,
       });
 
       let output = ``;
@@ -108,8 +122,35 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
       oddProcess.stderr.setEncoding(`utf8`)
       
       oddProcess.stdout.on('data', (data) => {
+
+        let pidRegExp = /Started\ with\ PID\ (\d+)/
+        if (pidRegExp.test(data)) {
+
+          oddProcess.oddPid = data.match(pidRegExp)[1]
+
+          this.monitor = new MemoryMonitor(oddProcess.oddPid)
+          this.monitor.startMonitoring()
+          this.monitor.on(`usage`, (memoryUsage) => {
+            
+            this.memoryUsage = memoryUsage
+            if (this.memoryUsage > this.maxMemory) {
+              oddProcess.kill()
+              return reject([new ODDOutOfMemoryError(`ODD process killed because it exceeded the memory limit!`, {
+                usage: this.memoryUsage,
+                limit: this.maxMemory,
+              })])
+            }
+
+          })
+          this.monitor.on(`error`, (err) => {
+            return reject([new ODDWrapperError(`Error with memory monitoring!`, err)])
+          })
+          
+        }
+        
         // console.debug(`stdout: ${data}`);
         output += data;
+
       });
       
       oddProcess.stderr.on('data', (data) => {
@@ -121,22 +162,32 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         // console.error(`error:`, err)
         return reject([new ODDWrapperError(err.message)]);
       })
-      
-      oddProcess.on('close', (code) => {
 
+      oddProcess.on(`exit`, (code, signal) => {
+
+        this.monitor.stopMonitoring()
+        this.memoryUsage = 0
+
+      })
+      
+      oddProcess.on('close', (code, signal) => {
+
+        if (!code) {
+          return reject([new ODDError(`ODD was killed by '${signal}'`)]);
+        }
         if (code !== 1) {
-          reject(new ODDError(`ODD exited with code ${code}`, error));
+          return reject([new ODDError(`ODD exited with code '${code}'`)]);
         }
 
         // console.log(`output:`, output)
         
         if (output.split(`Finished indexing`).length <= 1) {
-          return reject(new ODDError(`ODD never finished indexing!`));
+          return reject([new ODDError(`ODD never finished indexing!`)]);
         }
 
         if (output.split(`No URLs to save`).length > 1) {
           // ODD found no files or subdirectories
-          return reject(new ODDError(`OpenDirectoryDownloader didn't find any files or directories on that site!`));
+          return reject([new ODDError(`OpenDirectoryDownloader didn't find any files or directories on that site!`)]);
         }
         
         // const finalResults = output.split(`Finished indexing`)[1];
@@ -221,6 +272,40 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
       });
     
     })
+  }
+  
+}
+
+class MemoryMonitor extends EventEmitter {
+
+  constructor(pid) {
+
+    super()
+    
+    this.pid = pid
+
+  }
+
+  startMonitoring() {
+
+    this.intervalId = setInterval(() => {
+      pidusage(this.pid, (err, stats) => {
+    
+        if (err && err.message !== `No matching pid found`) {
+          return this.emit(`error`)
+        }
+
+        if (stats?.memory) {
+          this.emit(`usage`, stats.memory)
+        }
+        
+      })
+    }, 500)
+    
+  }
+
+  stopMonitoring() {
+    clearInterval(this.intervalId)
   }
   
 }

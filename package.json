@@ -1,6 +1,6 @@
 {
   "name": "open-directory-downloader",
-  "version": "3.1.2",
+  "version": "4.0.0",
   "description": "A NodeJS wrapper around KoalaBear84/OpenDirectoryDownloader",
   "main": "open-directory-downloader.js",
   "scripts": {
@@ -30,6 +30,7 @@
   "homepage": "https://github.com/Chaphasilor/open-directory-downloader#readme",
   "dependencies": {
     "adm-zip": "^0.5.1",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "pidusage": "^2.0.21"
   }
 }
