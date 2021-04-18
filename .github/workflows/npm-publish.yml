@@ -8,33 +8,33 @@ on:
     types: [created]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 14
-      - run: npm ci
-      - run: npm test
-  apply-release-tag-to-package:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 14
-      - name: Set tag as envvar
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      - name: update git settings
-        run: |
-            git config user.email "ppp.u@web.de"
-            git config user.name "Chaphasilor"
-      - name: Apply tag to package
-        run: npm version $RELEASE_VERSION
+  # build:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-node@v1
+  #       with:
+  #         node-version: 14
+  #     - run: npm ci
+  #     - run: npm test
+  # apply-release-tag-to-package:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-node@v1
+  #       with:
+  #         node-version: 14
+  #     - name: Set tag as envvar
+  #       run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+  #     - name: update git settings
+  #       run: |
+  #           git config user.email "ppp.u@web.de"
+  #           git config user.name "Chaphasilor"
+  #     - name: Apply tag to package
+  #       run: npm version $RELEASE_VERSION
   publish-npm:
-    needs: apply-release-tag-to-package
-#     needs: build
+    # needs: apply-release-tag-to-package
+    # needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
