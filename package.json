@@ -1,6 +1,6 @@
 {
   "name": "open-directory-downloader",
-  "version": "4.0.3",
+  "version": "4.0.4",
   "description": "A NodeJS wrapper around KoalaBear84/OpenDirectoryDownloader",
   "main": "open-directory-downloader.js",
   "scripts": {
@@ -11,15 +11,16 @@
     "url": "git+https://github.com/Chaphasilor/open-directory-downloader.git"
   },
   "keywords": [
-    "http",
-    "https",
-    "parser",
+    "OpenDirectoryDownloader",
+    "opendirectory",
+    "ODCrawler",
     "open",
     "directory",
     "indexer",
-    "OpenDirectoryDownloader",
     "downloader",
-    "opendirectory",
+    "parser",
+    "http",
+    "https",
     "open-directory-downloader"
   ],
   "author": "Chaphasilor",
