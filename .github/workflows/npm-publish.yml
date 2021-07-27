@@ -43,7 +43,7 @@ jobs:
           node-version: 14
           registry-url: https://registry.npmjs.org/
       - name: Show release tag
-        run: echo Releasing version '$RELEASE_VERSION' to npm
+        run: echo Releasing version $RELEASE_VERSION to npm
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
