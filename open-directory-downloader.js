@@ -40,6 +40,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
    * @param {String} [options.outputFile] The name of the output file(s). Defaults to the (safely formatted) URL.
    * @param {Boolean} [options.keepJsonFile=false] Keep the JSON file created by the OpenDirectoryDownloader binary after the scan is done?
    * @param {Boolean} [options.keepUrlFile=false] Keep the text file created by the OpenDirectoryDownloader binary after the scan is done?
+   * @param {Boolean} [options.parseScan=false] Parse the generated JSON file and include it in the `ScanResult`?
    * @param {Boolean} [options.performSpeedtest=false] Perform a speed test after the scan is done? (usually takes a few seconds)
    * @param {Boolean} [options.uploadUrlFile=false] Automatically upload the file containing all the found URLs to GoFile?
    * @param {Boolean} [options.fastScan=false] Only perform actions that are fast, so no HEAD requests, etc. Might result in missing file sizes
@@ -60,6 +61,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
       
       options.keepJsonFile = options.keepJsonFile || false
       options.keepUrlFile = options.keepUrlFile || false
+      options.parseScan = options.parseScan || false
       options.performSpeedtest = options.performSpeedtest || false
       options.uploadUrlFile = options.uploadUrlFile || false
       options.fastScan = options.fastScan || false
@@ -229,46 +231,43 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           }
         }
 
-        let results;
-        try {
-
-          results = JSON.parse(fs.readFileSync(jsonFile));
-          if (!options.keepJsonFile) {
-            try {
-              fs.unlinkSync(jsonFile);
-            } catch (err) {
-              // console.error(`Failed to delete JSON file:`, err)
-              // fail silently in production, because this isn't a critical error
-              // could be changed once https://github.com/KoalaBear84/OpenDirectoryDownloader/issues/64 is fixed
-            }
-          }
-          
-        } catch (err) {
-          
-          // console.error(`Error while reading in the scan results:`, err);
-          reject([
-            new ODDWrapperError(`Error while reading in the scan results`),
-            {
-              scannedUrl: url.toString(),
-              jsonFile: options.keepJsonFile ? jsonFile :  undefined,
-              urlFile: options.keepUrlFile ? urlFile :  undefined,
-              reddit: redditOutput,
-              credits,
-              missingFileSizes,
-            },
-          ])
-            
-        }
-
-        resolve({
+        const response = {
           scannedUrl: url.toString(),
-          scan: results,
           jsonFile: options.keepJsonFile ? jsonFile :  undefined,
           urlFile: options.keepUrlFile ? urlFile :  undefined,
           reddit: redditOutput,
           credits,
           missingFileSizes,
-        })
+        }
+
+        let results;
+        if (options.parseScan) {
+          try {
+  
+            results = JSON.parse(fs.readFileSync(jsonFile));
+            if (!options.keepJsonFile) {
+              try {
+                fs.unlinkSync(jsonFile);
+              } catch (err) {
+                // console.error(`Failed to delete JSON file:`, err)
+                // fail silently in production, because this isn't a critical error
+                // could be changed once https://github.com/KoalaBear84/OpenDirectoryDownloader/issues/64 is fixed
+              }
+            }
+            response.scan = results
+            
+          } catch (err) {
+            
+            // console.error(`Error while reading in the scan results:`, err);
+            reject([
+              new ODDWrapperError(`Error while reading in the scan results`),
+              response,
+            ])
+              
+          }
+        }
+
+        resolve(response)
         
       });
     
