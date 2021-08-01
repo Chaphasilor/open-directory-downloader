@@ -56,7 +56,8 @@ indexer.scanUrl(url)
 
 | Wrapper Version | Supported ODD Versions (up to) | Included Version |
 | --- | --- | --- |
-| 5.0.0 | 2.0.0.0 | 2.0.0.0 |
+| 5.1.0 | 2.0.0.3 | 2.0.0.3 |
+| 5.0.0 | 2.0.0.2 | 2.0.0.0 |
 | 4.0.3 | 1.9.6.1 | 1.9.6.1 |
 | 4.0.2 | 1.9.6.1 | 1.9.5.5 |
 | 4.0.1 | 1.9.6.1 | 1.9.4.6 |
@@ -116,12 +117,12 @@ Some intermediary releases might not be fully supported. It is recommended to us
 *The object returned when the promise resolves*
 
 - `scannedUrl` The URL that was scanned
-- [`scan`] The parsed JSON-Object created by the OpenDirectoryDownloader binary. Only included if `options.parseScan` was set to `true`  
-  Can be very large depending on the size of the Open Directory.
+- [`scan`] The parsed JSON-Object created by the OpenDirectoryDownloader binary. Can be very large depending on the size of the Open Directory.  
+   Only included if `options.parseScan` was set to `true`
 - `jsonFile` The full path to the created JSON-file.  
-  Only available if `keepJsonFile` was set to `true`.
+  Only included if `keepJsonFile` was set to `true`.
 - `urlFile` The full path to the created text-file.  
-  Only available if `keepUrlFile` was set to `true`.
+  Only included if `keepUrlFile` was set to `true`.
 - `reddit` The markdown-formatted table containing the stats for the Open Directory.  
   Does not include the credits.
 - `credits` The markdown signature containing a link to KoalaBear84/OpenDirectoryDownloader
