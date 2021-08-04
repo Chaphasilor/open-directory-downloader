@@ -389,7 +389,7 @@ class MemoryMonitor extends EventEmitter {
       pidusage(this.pid, (err, stats) => {
     
         if (err && err.message !== `No matching pid found`) {
-          return this.emit(`error`)
+          return this.emit(`error`, err)
         }
 
         if (stats?.memory) {
