@@ -231,6 +231,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           reddit: redditOutput,
           credits,
           missingFileSizes,
+          stats: transcriber.stats,
         }
 
         let results;
