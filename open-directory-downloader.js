@@ -327,11 +327,9 @@ class OutputTranscriber extends EventEmitter {
     this.stdinStream = stdin
 
     this.stdinStream.setEncoding(`utf8`)
+    this.stdinStream.on('error', (err) => {}) // handle errors to prevent crashing
     this.stdinStreamIntervalId = setInterval(() => {
-      try {
-        this.stdinStream.write(`s`); // input `S` to trigger ODD stats output
-      } catch (err) {
-      }
+      this.stdinStream.write(`s`); // input `S` to trigger ODD stats output
     }, this.options.statsInterval * 1000);
 
     this.stdoutStream.on('data', (data) => {
