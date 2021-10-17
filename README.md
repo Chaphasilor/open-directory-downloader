@@ -28,26 +28,35 @@ indexer.scanUrl(url)
 .then(scanResult => {
   console.log(scanResult)
   // {
-  //   scannedUrl: `https://example.com/files`,
+  //   scannedUrl: 'https://example.com/files',
   //   scan: {...},
-  //   jsonFile: `/full/path/to/scan/file`,
-  //   urlFile: `/full/path/to/url/file`,
-  //   reddit: `
-  //     |**Url:** https://example.com/files/||[Urls file](https://gofile.io/?c=XXXXX)|
-  //     |:-|-:|-:|
-  //     |**Extension (Top 5)**|**Files**|**Size**|
-  //     |.mp3|14,779|294.68 GiB|
-  //     |.flac|1,449|52.59 GiB|
-  //     |.mkv|7|33.3 GiB|
-  //     |.zip|7|5.61 GiB|
-  //     |.mp4|8|4.85 GiB|
-  //     |**Dirs:** 3,623 **Ext:** 119|**Total:** 30,357|**Total:** 415.97 GiB|
-  //     |**Date (UTC):** 2021-01-16 15:28:53|**Time:** 00:01:13|**Speed:** 1.4 MB/s (12 mbit)|
-  //   `,
-  //   credits: `
-  //     ^(Created by [KoalaBear84's OpenDirectory Indexer](https://github.com/KoalaBear84/OpenDirectoryDownloader/))
-  //   `,
+  //   jsonFile: '/full/path/to/scan/file',
+  //   urlFile: '/full/path/to/url/file',
+  //   reddit: '|**Url:** [https://example.com/files](https://example.com/files)||[Urls file](https://gofile.io/?c=XXXXX)|\r\n' +
+  //     '|:-|-:|-:|\r\n' +
+  //     '|**Extension (Top 5)**|**Files**|**Size**|\r\n' +
+  //     '|.iso|70|2.2 TiB|\r\n' +
+  //     '|.mkv|40|796.3 GiB|\r\n' +
+  //     '|.zip|16|200.39 GiB|\r\n' +
+  //     '|.rar|1|71 GiB|\r\n' +
+  //     '|.mp4|1|32 GiB|\r\n' +
+  //     '|**Dirs:** 188 **Ext:** 34|**Total:** 572|**Total:** 3.39 TiB|\r\n' +
+  //     '|**Date (UTC):** 2021-10-17 12:13:31|**Time:** 00:00:20||\r\n',
+  //   credits: "^(Created by [KoalaBear84's OpenDirectory Indexer v2.1.0.0](https://github.com/KoalaBear84/OpenDirectoryDownloader/))",
   //   missingFileSizes: false,
+  //   stats: {
+  //     version: '2.1.0.0',
+  //     totalFiles: 572,
+  //     totalSize: '3.39 TiB',
+  //     totalDirectories: 188,
+  //     statusCodes: { '200': 188 },
+  //     totalHTTPRequests: 188,
+  //     totalHTTPTraffic: '353.19 kiB',
+  //     urlQueue: 0,
+  //     urlThreads: 0,
+  //     sizeQueue: 0,
+  //     sizeThreads: 0
+  //   }
   // }
 }
 ```
@@ -56,7 +65,9 @@ indexer.scanUrl(url)
 
 | Wrapper Version | Supported ODD Versions (up to) | Included Version |
 | --- | --- | --- |
-| 5.0.0 | 2.0.0.0 | 2.0.0.0 |
+| **6.0.0** | **2.1.0.0** | **2.1.0.0** |
+| 5.1.0 | 2.0.0.6 | 2.0.0.3 |
+| 5.0.0 | 2.0.0.2 | 2.0.0.0 |
 | 4.0.3 | 1.9.6.1 | 1.9.6.1 |
 | 4.0.2 | 1.9.6.1 | 1.9.5.5 |
 | 4.0.1 | 1.9.6.1 | 1.9.4.6 |
@@ -85,7 +96,7 @@ Some intermediary releases might not be fully supported. It is recommended to us
     Allows you to use a custom OpenDirectoryDownloader binary.
   - `workingDirectory` (`String`) (optional) The full path to the directory where OpenDirectoryDownloader saves its scan files.
   - `maximumMemory` (`Number`) (optional, default is `Infinity`) The maximum allowed memory usage in bytes for each scan.  
-    If the limit is exceeded, the scan is aborted and rejects with an `ODDOutOfMemoryError`.
+  - `statsInterval` (`Number`) (optional, default is `15`) The *minimum* interval (in seconds) for refreshing the scan stats (applies to `ScanResultPromise.live`). ODD might output additional stats periodically, so the `stats` event might get emitted more often.
 - Returns: An instance of `OpenDirectoryDownloader`
 
 #### OpenDirectoryDownloader.scanUrl(url[, options])  
@@ -109,19 +120,45 @@ Some intermediary releases might not be fully supported. It is recommended to us
   - `threads` (`Number`) (optional, default is `5`] Number of threads to use for scanning
   - `timeout` (`Number`) (optional, default is `100`] Number of seconds to wait before timing out
 - **Returns**: Promise<Resolves to `ScanResult` | Rejects to `Array<Error[,ScanResult]>`>  
+  **The promise also has a `live` property (see below).**  
   If the promise rejects, it will return an array where the first element is always an `Error` object and there might also be a second element, which is a `ScanResult` but without the `ScanResult.scan` property.
+
+#### ScanResultPromise
+
+*The promise returned when starting a scan, resolves to `ScanResult`*
+
+- `live` An `EventEmitter` providing the following events:
+  - *EVENT* `logs` (`String`) Emitted every time ODD outputs new logs, containing only the new logs (including errors)
+  - *EVENT* `stats` (`Object`) Emitted every time ODD outputs the current scan stats.  
+    - `version` (`String`) the detected version of ODD
+    - `totalFiles` (`Number`) the total amount of files found in the OD
+    - `totalSize` (`String`) the (estimated) total size of all the files, in human-readable form
+    - `totalDirectories` (`Number`) the total amount of subdirectories found in the OD
+    - `statusCodes` (`Object`) an object containing status codes as *keys* and the number of times that status code was returned as *values*
+    - `totalHTTPRequests` (`Number`) the total amount of HTTP requests made while scanning
+    - `totalHTTPTraffic` (`String`) the total HTTP traffic generated while scanning, in human-readable form
+    - `urlQueue` (`Number`) the amount of URLs that still need to be indexed
+    - `urlThreads` (`Number`) the amount of threads used for indexing the remaining URLs
+    - `sizeQueue` (`Number`) the amount of URLs/files for which the size still needs to be determined
+    - `sizeThreads` (`Number`) the amount of threads used for determining the file sizes
+
+The `live` property also has some sub-properties:
+
+- `output` (`String`) All the logs generated by ODD during the current scan. Same properties as the object emitted by the `logs` event above.
+- `error` (`String`) All the *error* logs generated by ODD during the current scan
+- `stats` (`Object`) The current stats. Same properties as the object emitted by the `stats` event above.
 
 #### ScanResult
 
 *The object returned when the promise resolves*
 
 - `scannedUrl` The URL that was scanned
-- [`scan`] The parsed JSON-Object created by the OpenDirectoryDownloader binary. Only included if `options.parseScan` was set to `true`  
-  Can be very large depending on the size of the Open Directory.
+- [`scan`] The parsed JSON-Object created by the OpenDirectoryDownloader binary. Can be very large depending on the size of the Open Directory.  
+   Only included if `options.parseScan` was set to `true`
 - `jsonFile` The full path to the created JSON-file.  
-  Only available if `keepJsonFile` was set to `true`.
+  Only included if `keepJsonFile` was set to `true`.
 - `urlFile` The full path to the created text-file.  
-  Only available if `keepUrlFile` was set to `true`.
+  Only included if `keepUrlFile` was set to `true`.
 - `reddit` The markdown-formatted table containing the stats for the Open Directory.  
   Does not include the credits.
 - `credits` The markdown signature containing a link to KoalaBear84/OpenDirectoryDownloader
@@ -168,6 +205,33 @@ indexer.scanUrl(url, {
 .catch(console.error)
 ```
 
+### Live Logs & Stats
+
+```js
+const odd = require(`open-directory-downloader`);
+
+const indexer = new odd.OpenDirectoryDownloader({
+  statsInterval: 5, // 5 seconds
+});
+
+let scan = indexer.scanUrl(url)
+
+scan.live.on(`logs`, (newLogs) => {
+  console.logs(newLogs)
+})
+scan.live.on(`stats`, (newStats) => {
+  console.logs(newStats)
+})
+
+scan.then(scanResult => {
+  console.log(scanResult)
+})
+.catch(console.error)
+// or:
+// let scanResult = await scan
+
+```
+
 ### Error Handling
 
 ```js
@@ -181,6 +245,13 @@ indexer.scanUrl(url)
     console.log(err.name) // 'ODDError'
   } else if (err instanceof odd.ODDWrapperError) {
     console.log(err.name) // 'WrapperError'
+    console.log(err[0]) // logs the actual error
+    if (err.length > 1) {
+      console.log(err[1]) // logs a `ScanResult`, possibly with some fields (like `ScanResult.scan`) missing
+    }
+  }
+  } else if (err instanceof odd.ODDOutOfMemoryError) {
+    console.log(err.name) // 'OutOfMemoryError'
   }
 })
 ```

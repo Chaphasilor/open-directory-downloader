@@ -19,7 +19,7 @@ class ODDOutOfMemoryError extends Error {
     super()
 
     Error.captureStackTrace(this, this.constructor)
-    this.name = 'ODDOutOfMemoryError'
+    this.name = 'OutOfMemoryError'
     this.message = message
     if (extras) {
       this.extras = extras

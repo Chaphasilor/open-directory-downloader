@@ -20,12 +20,14 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
    * @param {String} [options.executablePath] the full path to the custom ODD binary to use (instead of the bundled one)
    * @param {String} [options.workingDirectory] the full path to the custom current working directory (location of output files)
    * @param {Number} [options.maximumMemory=Infinity] the maximum allowed memory usage in bytes for the ODD process
+   * @param {Number} [options.statsInterval=15] the minimum interval (in seconds) for refreshing the scan stats 
    */
   constructor(options = {}) {
 
     this.executable = options.executablePath || CONFIG.OpenDirectoryDownloaderPath;
-    this.outputDir = options.workingDirectory || CONFIG.OpenDirectoryDownloaderOutputFolder;
+    this.outputDir = options.workingDirectory || CONFIG.OpenDirectoryDownloaderFolder;
     this.maxMemory = options.maximumMemory || Infinity
+    this.statsInterval = options.statsInterval || 15
 
     if (!fs.existsSync(this.outputDir)) {
       fs.mkdirSync(this.outputDir)
@@ -53,7 +55,10 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
    * @param {Number} [options.timeout=100] Number of seconds to wait before timing out
    */
   scanUrl(url, options = {}) {
-    return new Promise((resolve, reject) => {
+    const transcriber = new OutputTranscriber({
+      statsInterval: this.statsInterval,
+    })
+    const promiseToReturn = new Promise((resolve, reject) => {
 
       if (!url || url.length === 0) {
         return reject([new ODDWrapperError(`Missing URL!`)])
@@ -116,17 +121,16 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         cwd: this.outputDir,
         detached: false,
       });
-
-      let output = ``;
-      let error = ``;
-
+      
       oddProcess.stdout.setEncoding(`utf8`)
       oddProcess.stderr.setEncoding(`utf8`)
+      
+      transcriber.startTranscribing(oddProcess.stdout, oddProcess.stderr, oddProcess.stdin)
       
       oddProcess.stdout.on('data', (data) => {
 
         let pidRegExp = /Started\ with\ PID\ (\d+)/
-        if (pidRegExp.test(data)) {
+        if (!this.monitor && pidRegExp.test(data)) {
 
           oddProcess.oddPid = data.match(pidRegExp)[1]
 
@@ -148,17 +152,9 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           this.monitor.on(`error`, (err) => {
             return reject([new ODDWrapperError(`Error with memory monitoring!`, err)])
           })
-          
-        }
-        
-        // console.debug(`stdout: ${data}`);
-        output += data;
 
-      });
-      
-      oddProcess.stderr.on('data', (data) => {
-        // console.warn(`Error from ODD: ${data}`);
-        error += data;
+        }
+
       });
 
       oddProcess.on(`error`, (err) => {
@@ -182,19 +178,19 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           return reject([new ODDError(`ODD exited with code '${code}'`)]);
         }
 
-        // console.log(`output:`, output)
+        // console.log(`transcriber.output:`, transcriber.output)
         
-        if (output.split(`Finished indexing`).length <= 1) {
+        if (transcriber.output.split(`Finished indexing`).length <= 1) {
           return reject([new ODDError(`ODD never finished indexing!`)]);
         }
 
-        if (output.split(`No URLs to save`).length > 1) {
+        if (transcriber.output.split(`No URLs to save`).length > 1) {
           // ODD found no files or subdirectories
           return reject([new ODDError(`OpenDirectoryDownloader didn't find any files or directories on that site!`)]);
         }
         
         // const finalResults = output.split(`Finished indexing`)[1];
-        const finalResults = output.split(`Saving URL list to file..`)[1];
+        const finalResults = transcriber.output.split(`Saving URL list to file..`)[1];
 
         if (!finalResults) {
           return reject([new ODDWrapperError(`Failed to parse ODD output!`)])
@@ -202,11 +198,11 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
         // console.log(`finalResults:`, finalResults);
         
-        const redditOutputStartString = `|`;
-        const redditOutputEndString = `^(Created by [KoalaBear84's OpenDirectory Indexer](https://github.com/KoalaBear84/OpenDirectoryDownloader/))`;
-        const credits = `^(Created by [KoalaBear84's OpenDirectory Indexer](https://github.com/KoalaBear84/OpenDirectoryDownloader/))`;
+        const redditOutputRegExp = /Saved URL list.*\r\nHttp status codes\r\n(?:.|\r\n)*?(^\|\*\*(?:.|\r\n)*?)\r\n\^\(Created by.*?\)\r\n\r\n/m
+        const redditOutputEndRegExp = /\^\(Created by \[KoalaBear84\'s OpenDirectory Indexer v.*?\]\(https:\/\/github\.com\/KoalaBear84\/OpenDirectoryDownloader\/\)\)/;
+        const credits = transcriber.output.match(redditOutputEndRegExp)[0]
         
-        let redditOutput = `${redditOutputStartString}${finalResults.split(redditOutputStartString).slice(1).join(redditOutputStartString)}`.split(redditOutputEndString).slice(0, -1).join(redditOutputEndString);
+        let redditOutput = finalResults.match(redditOutputRegExp)[1]
 
         let missingFileSizes = redditOutput.includes(`**Total:** n/a`)
 
@@ -238,6 +234,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           reddit: redditOutput,
           credits,
           missingFileSizes,
+          stats: transcriber.stats,
         }
 
         let results;
@@ -267,11 +264,145 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           }
         }
 
+        transcriber.stopTranscribing() //!!! needed to clear timeout intervals
         resolve(response)
         
       });
     
     })
+    promiseToReturn.live = transcriber
+    return promiseToReturn
+  }
+  
+}
+
+class OutputTranscriber extends EventEmitter {
+
+  constructor(options) {
+
+    super()
+
+    this.options = {}
+    this.options.statsInterval = options.statsInterval
+    
+    this.output = ``
+    this.error = ``
+    this.startLogging = false
+
+    this.stats = {
+      version: `unknown`,
+      totalFiles: 0,
+      totalSize: `unknown`,
+      totalDirectories: 0,
+      statusCodes: {},
+      totalHTTPRequests: 0,
+      totalHTTPTraffic: `unknown`,
+      urlQueue: 0,
+      urlThreads: 0,
+      sizeQueue: 0,
+      sizeThreads: 0,
+    }
+
+    this.startRegExp = /WARN Command\.ProcessConsoleInput/
+    this.versionRegExp = /KoalaBear84\/OpenDirectoryDownloader v(.*?) / //!!! non-greedy & whitespace at the end is important
+    this.statusCodesExtractorRegex = /Http status codes[\n\r]+((?:\d+: \d+[\n\r]+)+)/
+    this.statusCodesRegex = /(\d+): (\d+)/
+    this.fileStatsRegex = /Total files: (\d+), Total estimated size: (.*?)[\n\r]+/
+    this.directoryStatsRegex = /Total directories: (\d+)/
+    this.httpStatsRegex = /Total HTTP requests: (\d+), Total HTTP traffic: (.*?)[\n\r]+/
+    this.queueStatsRegex = /Queue: (\d+) \((\d+) threads\), Queue \(filesizes\): (\d+) \((\d+) threads\)/
+    
+  }
+
+  startTranscribing(stdout, stderr, stdin) {
+
+    this.stdoutStream = stdout
+    this.stderrStream = stderr
+    this.stdinStream = stdin
+
+    this.stdinStream.setEncoding(`utf8`)
+    this.stdinStreamIntervalId = setInterval(() => {
+      this.stdinStream.write(`s`); // input `S` to trigger ODD stats output
+    }, this.options.statsInterval * 1000);
+
+    this.stdoutStream.on('data', (data) => {
+      
+      // detect version
+      if (this.versionRegExp.test(data)) {
+        this.stats.version = data.match(this.versionRegExp)[1]
+      }
+      
+      if (!this.startLogging) {
+        if (this.startRegExp.test(data)) {
+          this.startLogging = true
+        }
+        return
+      }
+      
+      this.output += data
+      
+      let statsUpdated = false
+
+      // detect other stats
+      if (this.statusCodesExtractorRegex.test(data)) {
+        const statusCodeLines = data.match(this.statusCodesExtractorRegex)[1]
+        statusCodeLines.split(`\n`).filter(Boolean).forEach(statusCodeLine => {
+          const [match, code, amount] = statusCodeLine.match(this.statusCodesRegex)
+          this.stats.statusCodes[code] = parseInt(amount)
+        })
+        statsUpdated = true
+      }
+      if (this.fileStatsRegex.test(data)) {
+        const [match, files, size] = data.match(this.fileStatsRegex)
+        this.stats.totalFiles = parseInt(files)
+        this.stats.totalSize = size
+        statsUpdated = true
+      }
+      if (this.directoryStatsRegex.test(data)) {
+        const [match, dirs] = data.match(this.directoryStatsRegex)
+        this.stats.totalDirectories = parseInt(dirs)
+        statsUpdated = true
+      }
+      if (this.httpStatsRegex.test(data)) {
+        const [match, requests, traffic] = data.match(this.httpStatsRegex)
+        this.stats.totalHTTPRequests = parseInt(requests)
+        this.stats.totalHTTPTraffic = traffic
+        statsUpdated = true
+      }
+      if (this.queueStatsRegex.test(data)) {
+        const [match, queue, threads, queueSizes, threadsSizes] = data.match(this.queueStatsRegex)
+        this.stats.urlQueue = parseInt(queue)
+        this.stats.urlThreads = parseInt(threads)
+        this.stats.sizeQueue = parseInt(queueSizes)
+        this.stats.sizeThreads = parseInt(threadsSizes)
+        statsUpdated = true
+      }
+      
+      this.emit(`logs`, data)
+      //TODO add verbosity settings
+
+      if (statsUpdated) {
+        this.emit(`stats`, this.stats)
+      }
+      
+    })
+    
+    this.stderrStream.on('data', (data) => {
+      // console.debug(data)
+
+      this.output += data
+      this.error += data
+
+      this.emit(`logs`, data)
+      
+    })
+
+  }
+
+  stopTranscribing() {
+
+    clearInterval(this.stdinStreamIntervalId)
+    
   }
   
 }
@@ -292,7 +423,7 @@ class MemoryMonitor extends EventEmitter {
       pidusage(this.pid, (err, stats) => {
     
         if (err && err.message !== `No matching pid found`) {
-          return this.emit(`error`)
+          return this.emit(`error`, err)
         }
 
         if (stats?.memory) {
