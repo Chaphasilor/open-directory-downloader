@@ -198,7 +198,9 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
         // console.log(`finalResults:`, finalResults);
         
-        const redditOutputRegExp = /Saved URL list.*\r\nHttp status codes\r\n(?:.|\r\n)*?(^\|\*\*(?:.|\r\n)*?)\r\n\^\(Created by.*?\)\r\n\r\n/m
+        const redditOutputRegExp = options.performSpeedtest ?
+          /Finished speedtest.*\r\nHttp status codes\r\n(?:.|\r\n)*?(^\|\*\*(?:.|\r\n)*?)\r\n\^\(Created by.*?\)\r\n\r\n/m :
+          /Saved URL list.*\r\nHttp status codes\r\n(?:.|\r\n)*?(^\|\*\*(?:.|\r\n)*?)\r\n\^\(Created by.*?\)\r\n\r\n/m
         const redditOutputEndRegExp = /\^\(Created by \[KoalaBear84\'s OpenDirectory Indexer v.*?\]\(https:\/\/github\.com\/KoalaBear84\/OpenDirectoryDownloader\/\)\)/;
         const credits = transcriber.output.match(redditOutputEndRegExp)[0]
         
