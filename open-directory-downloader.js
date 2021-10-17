@@ -20,12 +20,14 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
    * @param {String} [options.executablePath] the full path to the custom ODD binary to use (instead of the bundled one)
    * @param {String} [options.workingDirectory] the full path to the custom current working directory (location of output files)
    * @param {Number} [options.maximumMemory=Infinity] the maximum allowed memory usage in bytes for the ODD process
+   * @param {Number} [options.statsInterval=15] the minimum interval (in seconds) for refreshing the scan stats 
    */
   constructor(options = {}) {
 
     this.executable = options.executablePath || CONFIG.OpenDirectoryDownloaderPath;
-    this.outputDir = options.workingDirectory || CONFIG.OpenDirectoryDownloaderOutputFolder;
+    this.outputDir = options.workingDirectory || CONFIG.OpenDirectoryDownloaderFolder;
     this.maxMemory = options.maximumMemory || Infinity
+    this.statsInterval = options.statsInterval || 15
 
     if (!fs.existsSync(this.outputDir)) {
       fs.mkdirSync(this.outputDir)
@@ -53,7 +55,9 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
    * @param {Number} [options.timeout=100] Number of seconds to wait before timing out
    */
   scanUrl(url, options = {}) {
-    const transcriber = new OutputTranscriber()
+    const transcriber = new OutputTranscriber({
+      statsInterval: this.statsInterval,
+    })
     const promiseToReturn = new Promise((resolve, reject) => {
 
       if (!url || url.length === 0) {
@@ -120,9 +124,8 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
       
       oddProcess.stdout.setEncoding(`utf8`)
       oddProcess.stderr.setEncoding(`utf8`)
-
       
-      transcriber.startTranscribing(oddProcess.stdout, oddProcess.stderr)
+      transcriber.startTranscribing(oddProcess.stdout, oddProcess.stderr, oddProcess.stdin)
       
       oddProcess.stdout.on('data', (data) => {
 
@@ -261,6 +264,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           }
         }
 
+        transcriber.stopTranscribing() //!!! needed to clear timeout intervals
         resolve(response)
         
       });
@@ -274,10 +278,13 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
 class OutputTranscriber extends EventEmitter {
 
-  constructor() {
+  constructor(options) {
 
     super()
 
+    this.options = {}
+    this.options.statsInterval = options.statsInterval
+    
     this.output = ``
     this.error = ``
     this.startLogging = false
@@ -290,6 +297,10 @@ class OutputTranscriber extends EventEmitter {
       statusCodes: {},
       totalHTTPRequests: 0,
       totalHTTPTraffic: `unknown`,
+      urlQueue: 0,
+      urlThreads: 0,
+      sizeQueue: 0,
+      sizeThreads: 0,
     }
 
     this.startRegExp = /WARN Command\.ProcessConsoleInput/
@@ -299,14 +310,20 @@ class OutputTranscriber extends EventEmitter {
     this.fileStatsRegex = /Total files: (\d+), Total estimated size: (.*?)[\n\r]+/
     this.directoryStatsRegex = /Total directories: (\d+)/
     this.httpStatsRegex = /Total HTTP requests: (\d+), Total HTTP traffic: (.*?)[\n\r]+/
-    this.statsRegex = / /
+    this.queueStatsRegex = /Queue: (\d+) \((\d+) threads\), Queue \(filesizes\): (\d+) \((\d+) threads\)/
     
   }
 
-  startTranscribing(stdout, stderr) {
+  startTranscribing(stdout, stderr, stdin) {
 
     this.stdoutStream = stdout
     this.stderrStream = stderr
+    this.stdinStream = stdin
+
+    this.stdinStream.setEncoding(`utf8`)
+    this.stdinStreamIntervalId = setInterval(() => {
+      this.stdinStream.write(`s`); // input `S` to trigger ODD stats output
+    }, this.options.statsInterval * 1000);
 
     this.stdoutStream.on('data', (data) => {
       
@@ -352,6 +369,14 @@ class OutputTranscriber extends EventEmitter {
         this.stats.totalHTTPTraffic = traffic
         statsUpdated = true
       }
+      if (this.queueStatsRegex.test(data)) {
+        const [match, queue, threads, queueSizes, threadsSizes] = data.match(this.queueStatsRegex)
+        this.stats.urlQueue = parseInt(queue)
+        this.stats.urlThreads = parseInt(threads)
+        this.stats.sizeQueue = parseInt(queueSizes)
+        this.stats.sizeThreads = parseInt(threadsSizes)
+        statsUpdated = true
+      }
       
       this.emit(`logs`, data)
       //TODO add verbosity settings
@@ -367,9 +392,17 @@ class OutputTranscriber extends EventEmitter {
 
       this.output += data
       this.error += data
+
+      this.emit(`logs`, data)
       
     })
 
+  }
+
+  stopTranscribing() {
+
+    clearInterval(this.stdinStreamIntervalId)
+    
   }
   
 }
