@@ -198,11 +198,11 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
         // console.log(`finalResults:`, finalResults);
         
-        const redditOutputStartString = `|`;
+        const redditOutputRegExp = /Saved URL list.*\r\nHttp status codes\r\n(?:.|\r\n)*?(^\|\*\*(?:.|\r\n)*?)\r\n\^\(Created by.*?\)\r\n\r\n/m
         const redditOutputEndRegExp = /\^\(Created by \[KoalaBear84\'s OpenDirectory Indexer v.*?\]\(https:\/\/github\.com\/KoalaBear84\/OpenDirectoryDownloader\/\)\)/;
         const credits = transcriber.output.match(redditOutputEndRegExp)[0]
         
-        let redditOutput = `${redditOutputStartString}${finalResults.split(redditOutputStartString).slice(1).join(redditOutputStartString)}`.split(credits).slice(0, -1).join(credits);
+        let redditOutput = finalResults.match(redditOutputRegExp)[1]
 
         let missingFileSizes = redditOutput.includes(`**Total:** n/a`)
 
