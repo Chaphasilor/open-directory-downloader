@@ -108,6 +108,7 @@ dist
 # ignore for now
 test.js
 
-# local development folders
+# local development folders & files
 ODD
 Scans/
+out.txt

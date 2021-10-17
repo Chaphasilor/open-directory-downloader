@@ -204,7 +204,11 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         const redditOutputEndRegExp = /\^\(Created by \[KoalaBear84\'s OpenDirectory Indexer v.*?\]\(https:\/\/github\.com\/KoalaBear84\/OpenDirectoryDownloader\/\)\)/;
         const credits = transcriber.output.match(redditOutputEndRegExp)[0]
         
-        let redditOutput = finalResults.match(redditOutputRegExp)[1]
+        if (!redditOutputRegExp.test(finalResults)) {
+          return reject([new ODDWrapperError(`Failed to parse ODD output!`)])
+        }
+        let redditOutput = `|**Url` + finalResults.match(redditOutputRegExp)[1]
+                           .split('|**Url').filter(Boolean).slice(-1)[0] // make sure there's only a single table
 
         let missingFileSizes = redditOutput.includes(`**Total:** n/a`)
 
@@ -324,7 +328,10 @@ class OutputTranscriber extends EventEmitter {
 
     this.stdinStream.setEncoding(`utf8`)
     this.stdinStreamIntervalId = setInterval(() => {
-      this.stdinStream.write(`s`); // input `S` to trigger ODD stats output
+      try {
+        this.stdinStream.write(`s`); // input `S` to trigger ODD stats output
+      } catch (err) {
+      }
     }, this.options.statsInterval * 1000);
 
     this.stdoutStream.on('data', (data) => {
