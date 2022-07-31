@@ -164,7 +164,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
       oddProcess.on(`exit`, (code, signal) => {
 
-        this.monitor.stopMonitoring()
+        this.monitor?.stopMonitoring()
         this.memoryUsage = 0
 
       })
