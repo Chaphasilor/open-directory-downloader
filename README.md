@@ -116,14 +116,14 @@ Some intermediary releases might not be fully supported. It is recommended to us
   - `performSpeedtest` (`Boolean`) (optional, default is `false`): Perform a speed test after the scan is done? (usually takes a few seconds)
   - `uploadUrlFile` (`Boolean`) (optional, default is `false`): Automatically upload the file containing all the found URLs to GoFile?
   - `fastScan` (`Boolean`) (optional, default is `false`): Disable slow operations during the scan, like HEAD requests. This can result in file sizes being reported as "0" or "n/a", if the OD doesn't show file sizes next to the file names.
-  - `exactSizes` (`Boolean`) (optional, default is `false`] Use HEAD requests to retrieve exact file sizes
-  - `userAgent` (`String`) (optional, default is `""`] Use a custom user agent for all HTTP requests
+  - `exactSizes` (`Boolean`) (optional, default is `false`) Use HEAD requests to retrieve exact file sizes
+  - `userAgent` (`String`) (optional, default is `""`) Use a custom user agent for all HTTP requests
   - `auth` (`Object`) (optional) Used to configure (HTTP Basic) auth settings
-    - `username` (`String`) (optional, default is `""`]) The user name to use for authentication
-    - `password` (`String`) (optional, default is `""`]) The password to use for authentication
-  - `auth` (`Object`) (optional) Used to configure additional headers to be sent with each request (cookies, referrers, etc.). Headers are key-value pairs of strings.
-  - `threads` (`Number`) (optional, default is `5`] Number of threads to use for scanning
-  - `timeout` (`Number`) (optional, default is `100`] Number of seconds to wait before timing out
+    - `username` (`String`) (optional, default is `""`) The user name to use for authentication
+    - `password` (`String`) (optional, default is `""`) The password to use for authentication
+  - `headers` (`Object`) (optional) Used to configure additional headers to be sent with each request (cookies, referrers, etc.). Headers are key-value pairs of strings. `userAgent` and `auth` will overwrite any equivalent custom headers, if provided.
+  - `threads` (`Number`) (optional, default is `5`) Number of threads to use for scanning
+  - `timeout` (`Number`) (optional, default is `100`) Number of seconds to wait before timing out
 - **Returns**: Promise<Resolves to `ScanResult` | Rejects to `Array<Error[,ScanResult]>`>  
   **The promise also has a `live` property (see below).**  
   If the promise rejects, it will return an array where the first element is always an `Error` object and there might also be a second element, which is a `ScanResult` but without the `ScanResult.scan` property.
