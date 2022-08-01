@@ -65,7 +65,8 @@ indexer.scanUrl(url)
 
 | Wrapper Version | Supported ODD Versions (up to) | Included Version |
 | --- | --- | --- |
-| **6.1.2** | **2.1.0.0** | **2.1.0.0** |
+| **6.2.0** | **2.1.0.8** | **2.1.0.8** |
+| 6.1.2 | 2.1.0.0 | 2.1.0.0 |
 | 6.1.0 | 2.1.0.0 | 2.1.0.0 |
 | 5.1.0 | 2.0.0.6 | 2.0.0.3 |
 | 5.0.0 | 2.0.0.2 | 2.0.0.0 |
@@ -118,6 +119,7 @@ Some intermediary releases might not be fully supported. It is recommended to us
   - `auth` (`Object`) (optional) Used to configure (HTTP Basic) auth settings
     - `username` (`String`) (optional, default is `""`]) The user name to use for authentication
     - `password` (`String`) (optional, default is `""`]) The password to use for authentication
+  - `auth` (`Object`) (optional) Used to configure additional headers to be sent with each request (cookies, referrers, etc.). Headers are key-value pairs of strings.
   - `threads` (`Number`) (optional, default is `5`] Number of threads to use for scanning
   - `timeout` (`Number`) (optional, default is `100`] Number of seconds to wait before timing out
 - **Returns**: Promise<Resolves to `ScanResult` | Rejects to `Array<Error[,ScanResult]>`>  
