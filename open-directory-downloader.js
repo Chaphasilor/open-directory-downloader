@@ -51,6 +51,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
    * @param {Object} [options.auth] Used to configure (HTTP Basic) auth settings
    * @param {String} [options.auth.username=""] The user name to use for authentication
    * @param {String} [options.auth.password=""] The password to use for authentication
+   * @param {Object} [options.headers] Object containing additional headers to use for all HTTP requests
    * @param {Number} [options.threads=5] Number of threads to use for scanning
    * @param {Number} [options.timeout=100] Number of seconds to wait before timing out
    */
@@ -71,6 +72,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
       options.uploadUrlFile = options.uploadUrlFile || false
       options.fastScan = options.fastScan || false
       options.exactSizes = options.exactSizes || false
+      options.headers = options.headers || {}
     
       // both String and URL implement the toString() method, so just use that instead of detecting the type
       let processArgs = [`-u "${url}"`, `--quit`, `--json`, ]
@@ -114,6 +116,16 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
       if (options.auth?.password) {
         processArgs.push(`--password`)
         processArgs.push(`"${options.auth.password}"`)
+      }
+
+      if (options.headers !== {}) {
+        Object.entries(options.headers).forEach(([headerName, headerValue]) => {
+          if (typeof headerValue !== `string`) {
+            throw new ODDWrapperError(`Header value for ${headerName} is not a string!`)
+          }
+          processArgs.push(`--header`)
+          processArgs.push(`"${headerName}: ${headerValue}"`)
+        })
       }
 
       const oddProcess = spawn(this.executable, processArgs, {
@@ -164,7 +176,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
       oddProcess.on(`exit`, (code, signal) => {
 
-        this.monitor.stopMonitoring()
+        this.monitor?.stopMonitoring()
         this.memoryUsage = 0
 
       })
