@@ -10,27 +10,28 @@ const architecture = process.arch
 console.info(`Fetching release assets from GitHub...`)
 fetch(`${CONFIG.GitHubReleasesUrl}/${CONFIG.OpenDirectoryDownloaderVersion.releaseId}/assets`).then(res => res.json()).then(assets => {
 
+  const version = CONFIG.OpenDirectoryDownloaderVersion.version.match(/^v?(\d+\.\d+\.\d+\.\d+)$/)[1]
   let releaseName
   
   if (architecture === `arm` && platform === `linux`) {
 
-    releaseName = `OpenDirectoryDownloader-linux-arm-self-contained.zip`
+    releaseName = `OpenDirectoryDownloader-${version}-linux-arm-self-contained.zip`
 
   } else if (architecture === `arm64` && platform === `linux`) {
 
-    releaseName = `OpenDirectoryDownloader-linux-arm64-self-contained.zip`
+    releaseName = `OpenDirectoryDownloader-${version}-linux-arm64-self-contained.zip`
 
   } else if (architecture === `x64` && platform === `linux`) {
 
-    releaseName = `OpenDirectoryDownloader-linux-x64-self-contained.zip`
+    releaseName = `OpenDirectoryDownloader-${version}-linux-x64-self-contained.zip`
 
   } else if (architecture === `x64` && platform === `darwin`) {
 
-    releaseName = `OpenDirectoryDownloader-osx-x64-self-contained.zip`
+    releaseName = `OpenDirectoryDownloader-${version}-osx-x64-self-contained.zip`
 
   } else if (architecture === `x64` && platform === `win32`) {
 
-    releaseName = `OpenDirectoryDownloader-win-x64-self-contained.zip`
+    releaseName = `OpenDirectoryDownloader-${version}-win-x64-self-contained.zip`
 
   } else {
     throw new Error(`Platform '${platform}' on architecture '${architecture}' is not supported by OpenDirectoryDownloader :(\nYou could try requesting support for it at https://github.com/KoalaBear84/OpenDirectoryDownloader ...`)
