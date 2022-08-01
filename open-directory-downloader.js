@@ -128,6 +128,8 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         })
       }
 
+      processArgs.push(`--no-browser`) // disallow starting Chromium browser (for Cloudflare)
+
       const oddProcess = spawn(this.executable, processArgs, {
         shell: true,
         cwd: this.outputDir,
