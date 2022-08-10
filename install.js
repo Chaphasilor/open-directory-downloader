@@ -9,7 +9,12 @@ const architecture = process.arch
 
 console.info(`Fetching release assets from GitHub...`)
 fetch(`${CONFIG.GitHubReleasesUrl}/${CONFIG.OpenDirectoryDownloaderVersion.releaseId}/assets`).then(res => res.json()).then(assets => {
-
+  
+  if (assets?.message?.includes(`API rate limit exceeded`)) {
+    console.error(`GitHub API rate limit exceeded, cannot fetch OpenDirectoryDownloader executable!`)
+    process.exit(1)
+  }
+  
   const version = CONFIG.OpenDirectoryDownloaderVersion.version.match(/^v?(\d+\.\d+\.\d+\.\d+)$/)[1]
   let releaseName
   
