@@ -128,7 +128,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         })
       }
 
-      processArgs.push(`--no-browser`) // disallow starting Chromium browser (for Cloudflare)
+      processArgs.push(`--no-browser`) // disallow starting Chromium browser (for Cloudflare-protected or JavaScript-based ODs)
 
       const oddProcess = spawn(this.executable, processArgs, {
         shell: true,
@@ -192,7 +192,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           return reject([new ODDError(`ODD exited with code '${code}'`)]);
         }
 
-        // console.log(`transcriber.output:`, transcriber.output)
+        console.log(`transcriber.output:`, transcriber.output)
         
         if (transcriber.output.split(`Finished indexing`).length <= 1) {
           return reject([new ODDError(`ODD never finished indexing!`)]);
@@ -212,9 +212,13 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
         // console.log(`finalResults:`, finalResults);
         
+        if (options.performSpeedtest && transcriber.output.includes(`Speedtest skipped`)) {
+          options.performSpeedtest = false
+        }
+        
         const redditOutputRegExp = options.performSpeedtest ?
           /Finished speedtest.*(?:\n|\r\n)Http status codes(?:\n|\r\n)(?:.|\n|\r\n)*?(^\|\*\*(?:.|\n|\r\n)*?)(?:\n|\r\n)\^\(Created by.*?\)(?:\n|\r\n){2}/m :
-          /Saved URL list.*(?:\n|\r\n)Http status codes(?:\n|\r\n)(?:.|\n|\r\n)*?(^\|\*\*(?:.|\n|\r\n)*?)(?:\n|\r\n)\^\(Created by.*?\)(?:\n|\r\n){2}/m
+          /Saved URL list.*(?:\n|\r\n)(?:.*(?:\n|\r\n))*Http status codes(?:\n|\r\n)(?:.|\n|\r\n)*?(^\|\*\*(?:.|\n|\r\n)*?)(?:\n|\r\n)\^\(Created by.*?\)(?:\n|\r\n){2}/m
         const redditOutputEndRegExp = /\^\(Created by \[KoalaBear84\'s OpenDirectory Indexer v.*?\]\(https:\/\/github\.com\/KoalaBear84\/OpenDirectoryDownloader\/\)\)/;
         const credits = transcriber.output.match(redditOutputEndRegExp)[0]
         
@@ -361,6 +365,10 @@ class OutputTranscriber extends EventEmitter {
       }
       
       this.output += data
+
+      if (this.output.includes(`Finished indexing!`)) {
+        this.stopTranscribing() // stop printing stats to prevent race conditions
+      }
       
       let statsUpdated = false
 
