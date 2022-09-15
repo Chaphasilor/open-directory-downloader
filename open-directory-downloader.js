@@ -207,7 +207,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         const finalResults = transcriber.output.split(`Saving URL list to file..`)[1];
 
         if (!finalResults) {
-          return reject([new ODDWrapperError(`Failed to parse ODD output!`)])
+          return reject([new ODDWrapperError(`Failed to parse ODD output!`, `Transcriber Output:\n` + transcriber.output)])
         }
 
         // console.log(`finalResults:`, finalResults);
@@ -223,7 +223,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
         const credits = transcriber.output.match(redditOutputEndRegExp)[0]
         
         if (!redditOutputRegExp.test(finalResults)) {
-          return reject([new ODDWrapperError(`Failed to parse ODD output!`)])
+          return reject([new ODDWrapperError(`Failed to parse ODD output!`, `Transcriber Output:\n` + transcriber.output, `Final Results:\n` + finalResults)])
         }
         let redditOutput = `|**Url` + finalResults.match(redditOutputRegExp)[1]
                            .split('|**Url').filter(Boolean).slice(-1)[0] // make sure there's only a single table
@@ -232,13 +232,13 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
 
         let sessionRegexResults = finalResults.match(/Saved\ session:\ (.*)/);
         if (!sessionRegexResults || sessionRegexResults.length <= 1) {
-          return reject([new ODDWrapperError(`JSON session file not found!`)]);
+          return reject([new ODDWrapperError(`JSON session file not found!`, `Transcriber Output:\n` + transcriber.output)]);
         }
         let jsonFile = sessionRegexResults[1]; // get first capturing group. /g modifier has to be missing!
 
         let urlListRegexResults = finalResults.match(/Saved URL list to file:\ (.*)/);
         if (!urlListRegexResults || urlListRegexResults.length <= 1) {
-          return reject([new ODDWrapperError(`URL list file not found!`)]);
+          return reject([new ODDWrapperError(`URL list file not found!`, `Transcriber Output:\n` + transcriber.output)]);
         }
         let urlFile = urlListRegexResults[1];
         if (!options.keepUrlFile) {
@@ -281,7 +281,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
             
             // console.error(`Error while reading in the scan results:`, err);
             reject([
-              new ODDWrapperError(`Error while reading in the scan results`),
+              new ODDWrapperError(`Error while reading in the scan results`, err.toString()),
               response,
             ])
               
