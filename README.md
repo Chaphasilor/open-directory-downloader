@@ -61,13 +61,16 @@ indexer.scanUrl(url)
 }
 ```
 
-## Compatible Versions of OpenDirectoryDownloader
+<details>
+
+<summary><b>Compatible Versions of OpenDirectoryDownloader</b></summary>
 
 | Wrapper Version | Supported ODD Versions (up to) | Included Version |
 | --- | --- | --- |
-| **9.0.1** | **v2.4.4.3+** | **v2.4.4.3** |
+| **9.0.2** | **v2.8.0.0+** | **v2.8.0.0** |
+| 9.0.1 | v2.5.0.1 | v2.4.4.3 |
 | 9.0.0 | v2.4.4.3+ | v2.4.4.3 |
-| 8.0.2 | v2.4.4.3+** | v2.4.4.1 |
+| 8.0.2 | v2.4.4.3+ | v2.4.4.1 |
 | 8.0.0 | v2.4.4.3+ | v2.3.1.4 |
 | 7.0.0 | 2.2.0.1-2.2.0.2 | 2.2.0.2 |
 | 6.2.0 | 2.1.0.8 | 2.1.0.8 |
@@ -88,6 +91,83 @@ indexer.scanUrl(url)
 | 1.0.0 | 1.9.3.1-1.9.3.5 | 1.9.3.3 |
 
 Some intermediary releases might not be fully supported. It is recommended to use the versions that are included by default.
+
+</details>
+
+## Examples
+
+### Custom Scan Options
+
+```js
+const odd = require(`open-directory-downloader`);
+
+const indexer = new odd.OpenDirectoryDownloader();
+
+indexer.scanUrl(url, {
+  outputFile: `/path/to/filename/without/extension`,
+  keepJsonFile: true,
+  keepUrlFile: true,
+  parseScan: true,
+  performSpeedtest: true,
+  uploadUrlFile: true,
+})
+.then(scanResult => {
+  console.log(scanResult)
+})
+.catch(console.error)
+```
+
+### Live Logs & Stats
+
+```js
+const odd = require(`open-directory-downloader`);
+
+const indexer = new odd.OpenDirectoryDownloader({
+  statsInterval: 5, // 5 seconds
+});
+
+let scan = indexer.scanUrl(url)
+
+scan.live.on(`logs`, (newLogs) => {
+  console.logs(newLogs)
+})
+scan.live.on(`stats`, (newStats) => {
+  console.logs(newStats)
+})
+
+scan.then(scanResult => {
+  console.log(scan.live.output) // access all logs after the scan is done
+  console.log(scanResult)
+})
+.catch(console.error)
+// or:
+// let scanResult = await scan
+
+```
+
+### Error Handling
+
+```js
+const odd = require(`open-directory-downloader`);
+
+const indexer = new odd.OpenDirectoryDownloader();
+
+indexer.scanUrl(url)
+.catch(err => {
+  if (err instanceof odd.ODDError) {
+    console.log(err.name) // 'ODDError'
+  } else if (err instanceof odd.ODDWrapperError) {
+    console.log(err.name) // 'WrapperError'
+    console.log(err[0]) // logs the actual error
+    if (err.length > 1) {
+      console.log(err[1]) // logs a "best-effort" `ScanResult`, possibly with some fields (like `ScanResult.scan`) missing
+    }
+  }
+  } else if (err instanceof odd.ODDOutOfMemoryError) {
+    console.log(err.name) // 'OutOfMemoryError'
+  }
+})
+```
 
 ## API
 
@@ -129,7 +209,7 @@ Some intermediary releases might not be fully supported. It is recommended to us
   - `threads` (`Number`) (optional, default is `5`) Number of threads to use for scanning
   - `timeout` (`Number`) (optional, default is `100`) Number of seconds to wait before timing out
 - **Returns**: Promise<Resolves to `ScanResult` | Rejects to `Array<Error[,ScanResult]>`>  
-  **The promise also has a `live` property (see below).**  
+  **The promise also has a `live` property ([see below](#scanresultpromise)).**  
   If the promise rejects, it will return an array where the first element is always an `Error` object and there might also be a second element, which is a `ScanResult` but without the `ScanResult.scan` property.
 
 #### ScanResultPromise
@@ -189,78 +269,4 @@ An error indicating that the OpenDirectoryDownloader process used more memory th
 #### ODDWrapperError
 
 An error indicating that the wrapper itself encountered an error.  
-*This could be related to e.g. file system issues (deleted files, permission issues, etc.).*
-
-## Examples
-
-### Custom Scan Options
-
-```js
-const odd = require(`open-directory-downloader`);
-
-const indexer = new odd.OpenDirectoryDownloader();
-
-indexer.scanUrl(url, {
-  outputFile: `/path/to/filename/without/extension`,
-  keepJsonFile: true,
-  keepUrlFile: true,
-  parseScan: true,
-  performSpeedtest: true,
-  uploadUrlFile: true,
-})
-.then(scanResult => {
-  console.log(scanResult)
-})
-.catch(console.error)
-```
-
-### Live Logs & Stats
-
-```js
-const odd = require(`open-directory-downloader`);
-
-const indexer = new odd.OpenDirectoryDownloader({
-  statsInterval: 5, // 5 seconds
-});
-
-let scan = indexer.scanUrl(url)
-
-scan.live.on(`logs`, (newLogs) => {
-  console.logs(newLogs)
-})
-scan.live.on(`stats`, (newStats) => {
-  console.logs(newStats)
-})
-
-scan.then(scanResult => {
-  console.log(scanResult)
-})
-.catch(console.error)
-// or:
-// let scanResult = await scan
-
-```
-
-### Error Handling
-
-```js
-const odd = require(`open-directory-downloader`);
-
-const indexer = new odd.OpenDirectoryDownloader();
-
-indexer.scanUrl(url)
-.catch(err => {
-  if (err instanceof odd.ODDError) {
-    console.log(err.name) // 'ODDError'
-  } else if (err instanceof odd.ODDWrapperError) {
-    console.log(err.name) // 'WrapperError'
-    console.log(err[0]) // logs the actual error
-    if (err.length > 1) {
-      console.log(err[1]) // logs a `ScanResult`, possibly with some fields (like `ScanResult.scan`) missing
-    }
-  }
-  } else if (err instanceof odd.ODDOutOfMemoryError) {
-    console.log(err.name) // 'OutOfMemoryError'
-  }
-})
-```
+*This could happen if parsing ODD's output fails or if there are file system issues (deleted files, permission issues, etc.).*

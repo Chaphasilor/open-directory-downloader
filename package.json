@@ -1,6 +1,6 @@
 {
   "name": "open-directory-downloader",
-  "version": "9.0.1",
+  "version": "9.0.2",
   "description": "A NodeJS wrapper around KoalaBear84/OpenDirectoryDownloader",
   "main": "open-directory-downloader.js",
   "scripts": {
