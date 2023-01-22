@@ -192,7 +192,7 @@ module.exports.OpenDirectoryDownloader = class OpenDirectoryDownloader {
           return reject([new ODDError(`ODD exited with code '${code}'`)]);
         }
 
-        console.log(`transcriber.output:`, transcriber.output)
+        // console.log(`transcriber.output:`, transcriber.output)
         
         if (transcriber.output.split(`Finished indexing`).length <= 1) {
           return reject([new ODDError(`ODD never finished indexing!`)]);
@@ -327,7 +327,7 @@ class OutputTranscriber extends EventEmitter {
       sizeThreads: 0,
     }
 
-    this.startRegExp = /WARN Command\.ProcessConsoleInput/
+    this.startRegExp = /Started with PID \d+/
     this.versionRegExp = /KoalaBear84\/OpenDirectoryDownloader v(.*?) / //!!! non-greedy & whitespace at the end is important
     this.statusCodesExtractorRegex = /Http status codes[\n\r]+((?:\d+: \d+[\n\r]+)+)/
     this.statusCodesRegex = /(\d+): (\d+)/
@@ -351,7 +351,7 @@ class OutputTranscriber extends EventEmitter {
     }, this.options.statsInterval * 1000);
 
     this.stdoutStream.on('data', (data) => {
-      
+
       // detect version
       if (this.versionRegExp.test(data)) {
         this.stats.version = data.match(this.versionRegExp)[1]

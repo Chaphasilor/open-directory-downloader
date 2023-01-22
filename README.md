@@ -67,7 +67,8 @@ indexer.scanUrl(url)
 
 | Wrapper Version | Supported ODD Versions (up to) | Included Version |
 | --- | --- | --- |
-| **9.0.1** | **v2.4.4.3+** | **v2.4.4.3** |
+| **9.0.2** | **v2.8.0.0+** | **v2.8.0.0** |
+| 9.0.1 | v2.5.0.1 | v2.4.4.3 |
 | 9.0.0 | v2.4.4.3+ | v2.4.4.3 |
 | 8.0.2 | v2.4.4.3+ | v2.4.4.1 |
 | 8.0.0 | v2.4.4.3+ | v2.3.1.4 |
@@ -135,6 +136,7 @@ scan.live.on(`stats`, (newStats) => {
 })
 
 scan.then(scanResult => {
+  console.log(scan.live.output) // access all logs after the scan is done
   console.log(scanResult)
 })
 .catch(console.error)
